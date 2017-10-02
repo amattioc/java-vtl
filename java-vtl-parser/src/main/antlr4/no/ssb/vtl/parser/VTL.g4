@@ -20,9 +20,19 @@
 grammar VTL;
 start : assignment+ EOF;
 
+/* Function declaration */
+anonymousFunction : '\\' functionArguments block ;
+functionArguments : positionalArguments
+                  | namedArguments
+                  | positionalArguments (',' namedArguments );
+positionalArguments : identifier 'as' argType (',' identifier 'as' argType)* ;
+namedArguments : identifier 'as' argType ASSIGNMENT constant (',' identifier 'as' argType ASSIGNMENT constant) * ;
+argType : ('integer' | 'string') ;
+
 /* Assignment */
 assignment : identifier ASSIGNMENT datasetExpression
            | identifier ASSIGNMENT block
+           | identifier ASSIGNMENT constant
            ;
 
 block : '{' assignment+ '}' ;
@@ -171,7 +181,7 @@ conditionalExpression
     : nvlExpression
     ;
 
-nvlExpression : 'nvl' '(' componentRef ',' nvlRepValue=constant ')';
+nvlExpression : 'nvl' '(' componentRef ',' nvlRepValue=exprAtom ')';
 
 dateFunction
     : dateFromStringFunction
