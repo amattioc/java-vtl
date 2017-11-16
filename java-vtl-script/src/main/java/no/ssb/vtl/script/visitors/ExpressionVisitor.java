@@ -32,7 +32,6 @@ import no.ssb.vtl.parser.VTLBaseVisitor;
 import no.ssb.vtl.parser.VTLParser;
 import no.ssb.vtl.script.VTLDataset;
 import no.ssb.vtl.script.error.ContextualRuntimeException;
-import no.ssb.vtl.script.error.VTLRuntimeException;
 import no.ssb.vtl.script.functions.FunctionExpression;
 import no.ssb.vtl.script.expressions.IfThenElseExpression;
 import no.ssb.vtl.script.functions.VTLAddition;
@@ -45,7 +44,6 @@ import no.ssb.vtl.script.functions.VTLOr;
 import no.ssb.vtl.script.functions.VTLSubtraction;
 import no.ssb.vtl.script.functions.VTLXor;
 import no.ssb.vtl.script.visitors.functions.NativeFunctionsVisitor;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import javax.script.Bindings;
 import java.util.function.BiPredicate;
@@ -110,7 +108,7 @@ public class ExpressionVisitor extends VTLBaseVisitor<VTLExpression> {
             case VTLParser.ISNULL:
                 return getIsNullExpression(object -> object.get() == null, operand);
             default:
-                throw new ParseCancellationException("unknown operator " + ctx.op.getText());
+                throw new ContextualRuntimeException("unknown operator " + ctx.op.getText(), ctx);
         }
     }
 
@@ -126,7 +124,7 @@ public class ExpressionVisitor extends VTLBaseVisitor<VTLExpression> {
             case VTLParser.NOT:
                 return new FunctionExpression<>(VTLNot.getInstance(), operand);
             default:
-                throw new ParseCancellationException("unknown operator " + ctx.op.getText());
+                throw new ContextualRuntimeException("unknown operator " + ctx.op.getText(), ctx);
         }
     }
 
@@ -168,40 +166,44 @@ public class ExpressionVisitor extends VTLBaseVisitor<VTLExpression> {
                 };
 
             default:
-                throw new ParseCancellationException("unknown operator " + ctx.op.getText());
+                throw new ContextualRuntimeException("unknown operator " + ctx.op.getText(), ctx);
         }
     }
 
     @Override
     public VTLExpression visitBinaryExpr(VTLParser.BinaryExprContext ctx) {
-        VTLExpression leftExpression = visit(ctx.left);
-        VTLExpression rightExpression = visit(ctx.right);
-        switch (ctx.op.getType()) {
+        try {
+            VTLExpression leftExpression = visit(ctx.left);
+            VTLExpression rightExpression = visit(ctx.right);
+            switch (ctx.op.getType()) {
 
-            case VTLParser.CONCAT:
-                return new FunctionExpression<>(VTLConcatenation.getInstance(), leftExpression, rightExpression);
+                case VTLParser.CONCAT:
+                    return new FunctionExpression<>(VTLConcatenation.getInstance(), leftExpression, rightExpression);
 
-            case VTLParser.EQ:
-                return getBooleanExpression((left, right) -> left.compareTo(right) == 0, leftExpression, rightExpression);
-            case VTLParser.NE:
-                return getBooleanExpression((left, right) -> left.compareTo(right) != 0, leftExpression, rightExpression);
-            case VTLParser.LE:
-                return getBooleanExpression((l, r) ->  l.compareTo(r) <= 0, leftExpression, rightExpression);
-            case VTLParser.LT:
-                return getBooleanExpression((l, r) -> l.compareTo(r) < 0, leftExpression, rightExpression);
-            case VTLParser.GE:
-                return getBooleanExpression((l, r) -> l.compareTo(r) >= 0, leftExpression, rightExpression);
-            case VTLParser.GT:
-                return getBooleanExpression((l, r) -> l.compareTo(r) > 0, leftExpression, rightExpression);
+                case VTLParser.EQ:
+                    return getBooleanExpression((left, right) -> left.compareTo(right) == 0, leftExpression, rightExpression);
+                case VTLParser.NE:
+                    return getBooleanExpression((left, right) -> left.compareTo(right) != 0, leftExpression, rightExpression);
+                case VTLParser.LE:
+                    return getBooleanExpression((l, r) -> l.compareTo(r) <= 0, leftExpression, rightExpression);
+                case VTLParser.LT:
+                    return getBooleanExpression((l, r) -> l.compareTo(r) < 0, leftExpression, rightExpression);
+                case VTLParser.GE:
+                    return getBooleanExpression((l, r) -> l.compareTo(r) >= 0, leftExpression, rightExpression);
+                case VTLParser.GT:
+                    return getBooleanExpression((l, r) -> l.compareTo(r) > 0, leftExpression, rightExpression);
 
-            case VTLParser.AND:
-                return new FunctionExpression<>(VTLAnd.getInstance(), leftExpression, rightExpression);
-            case VTLParser.OR:
-                return  new FunctionExpression<>(VTLOr.getInstance(), leftExpression, rightExpression);
-            case VTLParser.XOR:
-                return new FunctionExpression<>(VTLXor.getInstance(), leftExpression, rightExpression);
-            default:
-                throw new ParseCancellationException("unknown operator " + ctx.op.getText());
+                case VTLParser.AND:
+                    return new FunctionExpression<>(VTLAnd.getInstance(), leftExpression, rightExpression);
+                case VTLParser.OR:
+                    return new FunctionExpression<>(VTLOr.getInstance(), leftExpression, rightExpression);
+                case VTLParser.XOR:
+                    return new FunctionExpression<>(VTLXor.getInstance(), leftExpression, rightExpression);
+                default:
+                    throw new ContextualRuntimeException("unknown operator " + ctx.op.getText(), ctx);
+            }
+        } catch (IllegalArgumentException iae) {
+            throw new ContextualRuntimeException(iae, ctx);
         }
     }
 
@@ -249,7 +251,7 @@ public class ExpressionVisitor extends VTLBaseVisitor<VTLExpression> {
 
     @Override
     public VTLExpression visitUserFunctionCall(VTLParser.UserFunctionCallContext ctx) {
-        throw new IllegalArgumentException("undefined function " +  ctx.functionName.getText());
+        throw new ContextualRuntimeException("undefined function " +  ctx.functionName.getText(), ctx);
     }
 
     @Override
@@ -274,7 +276,7 @@ public class ExpressionVisitor extends VTLBaseVisitor<VTLExpression> {
 
             };
         } else {
-            throw new UnsupportedOperationException("[" + leftIdentifier + "] was not a dataset");
+            throw new ContextualRuntimeException(leftIdentifier + "was not a dataset", ctx);
         }
     }
 
@@ -328,8 +330,8 @@ public class ExpressionVisitor extends VTLBaseVisitor<VTLExpression> {
                 }
             };
         }
-        throw new VTLRuntimeException(
-                format("unknown object [%s]", object), "VTL-101", ctx
+        throw new ContextualRuntimeException(
+                format("unknown object %s", object), ctx
         );
     }
 
