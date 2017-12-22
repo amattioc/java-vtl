@@ -1,0 +1,4 @@
+{
+  "expression": "t1get := get(\"https://jboss-utv.ssb.no/api/v0/no/table/KostraTesting0001?KOKkommuneregion0000=all(*)&Tid=all(*)&ContentsCode=KOSskole0000+KOSelev0000\")\nt1filtered := [t1get]{filter KOKkommuneregion0000 = \"1001\" or KOKkommuneregion0000 = \"1103\" }\nt1summed := sum(t1filtered) along KOKkommuneregion0000 \nt1 := [t1summed] {identifier KOKkommuneregion0000 := \"ekg\"}\nres:=[t1]\n{KOSnokkel0000:= t1.KOSelev0000/t1.KOSskole0000,\nkeep KOSnokkel0000}",
+  "datasets": []
+}

@@ -1,0 +1,34 @@
+{
+  "query": [
+    {
+      "code": "KOKkommuneregion0000",
+      "selection": {
+        "filter": "all",
+        "values": ["*"]
+      }
+    },
+    {
+      "code": "Tid",
+      "selection": {
+        "filter": "all",
+        "values": [
+          "*"
+        ]
+      }
+    },
+    {
+      "code": "ContentsCode",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "KOSskole0000",
+          "KOSelev0000"
+
+        ]
+      }
+    }
+  ],
+  "response": {
+    "format": "json-stat"
+  }
+}
