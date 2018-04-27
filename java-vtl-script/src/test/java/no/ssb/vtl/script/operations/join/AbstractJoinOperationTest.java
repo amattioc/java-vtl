@@ -109,7 +109,7 @@ public class AbstractJoinOperationTest {
             }).map(DataPoint::create);
         });
         when(left.getData(any(Order.class))).then(invocation -> {
-            Order order = invocation.getArgumentAt(0, Order.class);
+            Order order = invocation.getArgument(0);
             Stream<DataPoint> sortedStream = Streams.mapWithIndex(leftData.stream(), (id, index) -> Lists.newArrayList(VTLObject.of(id), VTLObject.of("left " + (index + 1)))).map(DataPoint::create).sorted(order);
             return Optional.of(sortedStream);
         });
@@ -127,7 +127,7 @@ public class AbstractJoinOperationTest {
             }).map(DataPoint::create);
         });
         when(right.getData(any(Order.class))).then(invocation -> {
-            Order order = invocation.getArgumentAt(0, Order.class);
+            Order order = invocation.getArgument(0);
             Stream<DataPoint> sortedStream = Streams.mapWithIndex(leftData.stream(), (id, index) -> Lists.newArrayList(VTLObject.of(id), VTLObject.of("left " + (index + 1)))).map(DataPoint::create).sorted(order);
             return Optional.of(sortedStream);
         });

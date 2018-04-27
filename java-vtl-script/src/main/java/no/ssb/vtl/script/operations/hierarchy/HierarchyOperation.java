@@ -161,7 +161,7 @@ public class HierarchyOperation extends AbstractUnaryDatasetOperation {
 
                 Composition composition = checkNotNull(COMPOSITION_MAP.get(sign.get()), UNKNOWN_SIGN_VALUE, sign);
 
-                List<List<VTLObject>> paths = findPaths(graph, to, from);
+                List<List<VTLObject>> paths = findPaths(graph.asGraph(), to, from);
                 checkArgument(paths.isEmpty(), CIRCULAR_DEPENDENCY, from, composition, to, paths);
 
                 graph.putEdgeValue(from, to, composition);
@@ -305,7 +305,7 @@ public class HierarchyOperation extends AbstractUnaryDatasetOperation {
             // the sign of each datapoint (ie. a - (b - c + d) = a - b + c - d)
             for (VTLObject node : sorted) {
                 for (VTLObject successor : graph.successors(node)) {
-                    Composition sign = graph.edgeValue(node, successor);
+                    Composition sign = graph.edgeValue(node, successor).orElse(Composition.UNION);
                     for (ComposedDataPoint point : buckets.get(node)) {
                         if (Composition.COMPLEMENT.equals(sign)) {
                             // Invert if complement.
