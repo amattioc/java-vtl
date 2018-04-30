@@ -23,6 +23,7 @@ package no.ssb.vtl.script.operations.union;
 import com.codepoetics.protonpack.StreamUtils;
 import com.codepoetics.protonpack.selectors.Selector;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -40,7 +41,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.BaseStream;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Arrays.asList;
@@ -151,14 +157,14 @@ public class UnionOperation extends AbstractDatasetOperation {
                 components
         );
 
-        if (streams.size() == 1)
-            return Optional.of(streams.get(0));
+        List<Iterator<DataPoint>> iterators = streams.stream().map(BaseStream::iterator).collect(Collectors.toList());
+        Stream<DataPoint> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                Iterators.mergeSorted(
+                        iterators, orderWithIdentifiers
+                ), Spliterator.ORDERED
+        ), false);
 
-        Stream<DataPoint> result = StreamUtils.interleave(
-                createSelector(orderWithIdentifiers), streams
-        ).map(new DuplicateChecker(orderWithIdentifiers, getDataStructure()));
-
-        return Optional.of(result);
+        return Optional.of(stream.map(new DuplicateChecker(orderWithIdentifiers, getDataStructure())));
     }
 
     /**
